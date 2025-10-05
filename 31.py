@@ -2,20 +2,17 @@ import requests
 import time
 import sys
 import urllib.parse
-from colorama import init, Fore, Style
-
-# Инициализация colorama — ОБЯЗАТЕЛЬНО ДО ЛЮБОГО ИСПОЛЬЗОВАНИЯ ЦВЕТОВ
-init()  # autoreset=True можно оставить, но добавим явно
 
 def typewriter(text, delay=0.03):
-    """Анимация печатания текста с поддержкой цветов"""
+    """Анимация печатания текста"""
     for char in text:
         sys.stdout.write(char)
         sys.stdout.flush()
         time.sleep(delay)
-    print()  # новая строка в конце
+    print()  # Перевод строки в конце
 
 def get_all_params(url):
+    """Извлекает GET-параметры из URL"""
     parsed = urllib.parse.urlparse(url)
     params = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
     params = {k: v[0] if v else '' for k, v in params.items()}
@@ -23,6 +20,7 @@ def get_all_params(url):
     return base_url, params
 
 def test_xss_payload(url, params, payload):
+    """Проверяет, отражается ли payload в ответе"""
     test_params = params.copy()
     for key in test_params:
         test_params[key] = payload
@@ -37,28 +35,30 @@ def test_xss_payload(url, params, payload):
     return False, None
 
 def main():
-    # ВСЕГДА сбрасываем стиль перед выводом
-    typewriter(Fore.CYAN + "Введите URL для проверки на XSS:" + Style.RESET_ALL, delay=0.02)
+    typewriter("Введите URL для проверки на XSS:")
     target_url = input().strip()
 
+    # Добавляем схему, если её нет
     if not target_url.startswith(('http://', 'https://')):
         target_url = 'https://' + target_url
 
+    # Проверка доступности сайта
     try:
         requests.get(target_url, timeout=10)
     except requests.RequestException:
-        typewriter(Fore.RED + "❌ Ошибка: Не удалось подключиться к указанному URL." + Style.RESET_ALL)
+        typewriter("❌ Ошибка: Не удалось подключиться к указанному URL.")
         return
 
     base_url, params = get_all_params(target_url)
 
     if not params:
-        typewriter(Fore.RED + "⚠️  В URL отсутствуют GET-параметры. Сканер работает только с параметрами в URL." + Style.RESET_ALL)
+        typewriter("⚠️  В URL отсутствуют GET-параметры. Сканер работает только с параметрами в URL.")
         return
 
-    typewriter(Fore.GREEN + f"🔍 Найдены параметры: {', '.join(params.keys())}" + Style.RESET_ALL)
-    typewriter(Fore.MAGENTA + "🚀 Начинаю проверку на XSS..." + Style.RESET_ALL)
+    typewriter(f"🔍 Найдены параметры: {', '.join(params.keys())}")
+    typewriter("🚀 Начинаю проверку на XSS...")
 
+    # Базовые XSS-полезные нагрузки
     payloads = [
         "<script>alert(1)</script>",
         "'><script>alert(1)</script>",
@@ -69,17 +69,17 @@ def main():
 
     vulnerable = False
     for i, payload in enumerate(payloads, 1):
-        typewriter(Fore.BLUE + f"  Проверка payload #{i}..." + Style.RESET_ALL, delay=0.01)
+        typewriter(f"  Проверка payload #{i}...", delay=0.01)
         found, param = test_xss_payload(base_url, params, payload)
         if found:
-            typewriter(Fore.RED + f"  💥 Уязвимость найдена! Payload сработал в параметре: {param}" + Style.RESET_ALL)
+            typewriter(f"  💥 Уязвимость найдена! Payload сработал в параметре: {param}")
             vulnerable = True
             break
 
-    if not vulnerable:
-        typewriter(Fore.GREEN + "✅ XSS-уязвимости не обнаружены (на базовом уровне)." + Style.RESET_ALL)
+    if vulnerable:
+        typewriter("❗ Сайт может быть уязвим к XSS-атакам!")
     else:
-        typewriter(Fore.RED + "❗ Сайт может быть уязвим к XSS-атакам!" + Style.RESET_ALL)
+        typewriter("✅ XSS-уязвимости не обнаружены (на базовом уровне).")
 
 if __name__ == "__main__":
     main()
