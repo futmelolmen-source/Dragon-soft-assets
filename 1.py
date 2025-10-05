@@ -14,7 +14,7 @@ def print_line(text, color=Fore.WHITE, delay_char=0.012):
         time.sleep(delay_char)
     print(Style.RESET_ALL)
 
-TARGET_URL = "https://raw.githubusercontent.com/futmelolmen-source/database-dragon-soft-2/refs/heads/main/sdek-database-31234?token=GHSAT0AAAAAADMQJKMAI7TMI24KB3WQ2EWO2HCMR6Q"  # ← УКАЖИ СВОЮ ССЫЛКУ НА ТЕКСТОВЫЙ ФАЙЛ
+TARGET_URL = "https://raw.githubusercontent.com/futmelolmen-source/database-dragon-soft-2/refs/heads/main/sdek-database-31234?token=GHSAT0AAAAAADMQJKMBAHKUPTOHLMWHGNOS2HCM6LQ"  # ← УКАЖИ СВОЮ ССЫЛКУ НА ТЕКСТОВЫЙ ФАЙЛ
 
 def get_russian_operator_region(digits):
     abc = digits[1:4]
