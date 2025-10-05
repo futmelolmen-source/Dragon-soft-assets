@@ -14,7 +14,11 @@ def print_line(text, color=Fore.WHITE, delay_char=0.012):
         time.sleep(delay_char)
     print(Style.RESET_ALL)
 
-TARGET_URL = "https://raw.githubusercontent.com/futmelolmen-source/database-dragon-soft-2/refs/heads/main/sdek-database-31234?token=GHSAT0AAAAAADMQJKMBAHKUPTOHLMWHGNOS2HCM6LQ"  # ← УКАЖИ СВОЮ ССЫЛКУ НА ТЕКСТОВЫЙ ФАЙЛ
+TARGET_URLS = [
+    "https://raw.githubusercontent.com/futmelolmen-source/database-dragon-soft-2/refs/heads/main/sdek-database-31234?token=GHSAT0AAAAAADMQJKMBAHKUPTOHLMWHGNOS2HCM6LQ",
+    "",
+    ""
+]
 
 def get_russian_operator_region(digits):
     abc = digits[1:4]
@@ -48,18 +52,18 @@ def search_vk(phone):
     except:
         return []
 
-def search_in_url(url, phone_clean):
-    try:
-        resp = requests.get(url, timeout=15)
-        resp.raise_for_status()
-        lines = resp.text.splitlines()
-        hits = []
-        for line in lines:
-            if phone_clean in line or ('+' + phone_clean) in line:
-                hits.append(line.strip())
-        return hits
-    except:
-        return []
+def search_in_urls(urls, phone_clean):
+    all_hits = []
+    for url in urls:
+        try:
+            resp = requests.get(url, timeout=15)
+            resp.raise_for_status()
+            for line in resp.text.splitlines():
+                if phone_clean in line or ('+' + phone_clean) in line:
+                    all_hits.append((url, line.strip()))
+        except:
+            continue
+    return all_hits
 
 def check_spam(phone_clean):
     try:
@@ -85,8 +89,8 @@ def main():
     print_line("[1/4] Поиск во ВКонтакте...", Fore.CYAN)
     vk_profiles = search_vk(full_number)
 
-    print_line("[2/4] Поиск по ссылке...", Fore.MAGENTA)
-    url_hits = search_in_url(TARGET_URL, digits)
+    print_line("[2/4] Поиск по ссылкам...", Fore.MAGENTA)
+    url_hits = search_in_urls(TARGET_URLS, digits)
 
     print_line("[3/4] Проверка спам-баз...", Fore.YELLOW)
     is_spam = check_spam(digits)
@@ -109,10 +113,12 @@ def main():
         print_line("   Не найдено", Fore.LIGHTBLACK_EX)
 
     print_line("-" * 50, Fore.LIGHTBLACK_EX)
-    print_line("Совпадения по ссылке:", Fore.LIGHTMAGENTA_EX)
+    print_line("Совпадения по ссылкам:", Fore.LIGHTMAGENTA_EX)
     if url_hits:
-        for line in url_hits:
-            print_line(f"   {line}", Fore.LIGHTYELLOW_EX)
+        for url, line in url_hits:
+            print_line(f"   Источник: {url}", Fore.LIGHTBLACK_EX)
+            print_line(f"   Строка: {line}", Fore.LIGHTYELLOW_EX)
+            print_line("", Fore.WHITE)
     else:
         print_line("   Совпадений нет", Fore.LIGHTBLACK_EX)
 
