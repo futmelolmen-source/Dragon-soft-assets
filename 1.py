@@ -2,9 +2,6 @@ import requests
 import re
 import sys
 import time
-import os
-import tempfile
-import zipfile
 from bs4 import BeautifulSoup
 from colorama import init, Fore, Style
 
@@ -17,8 +14,7 @@ def print_line(text, color=Fore.WHITE, delay_char=0.012):
         time.sleep(delay_char)
     print(Style.RESET_ALL)
 
-GITHUB_TOKEN = "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"  # ← ВСТАВЬ СВОЙ ТОКЕН СЮДА
-TARGET_REPO = "https://github.com/futmelolmen-source/database-dragon-soft-2.git"  # ← URL ПРИВАТНОГО РЕПОЗИТОРИЯ
+TARGET_URL = "https://example.com/data.txt"  # ← УКАЖИ СВОЮ ССЫЛКУ НА ТЕКСТОВЫЙ ФАЙЛ
 
 def get_russian_operator_region(digits):
     abc = digits[1:4]
@@ -52,41 +48,16 @@ def search_vk(phone):
     except:
         return []
 
-def search_in_private_repo(repo_url, phone_clean, token):
+def search_in_url(url, phone_clean):
     try:
-        if 'github.com' not in repo_url:
-            return []
-        parts = repo_url.replace('https://', '').replace('http://', '').split('/')[1:3]
-        if len(parts) < 2:
-            return []
-        owner, repo_name = parts
-
-        api_url = f"https://api.github.com/repos/{owner}/{repo_name}/zipball"
-        headers = {"Authorization": f"token {token}"}
-        resp = requests.get(api_url, headers=headers, timeout=30)
-        if resp.status_code != 200:
-            return []
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            zip_path = os.path.join(tmpdir, "repo.zip")
-            with open(zip_path, 'wb') as f:
-                f.write(resp.content)
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(tmpdir)
-
-            hits = []
-            for root, _, files in os.walk(tmpdir):
-                for file in files:
-                    if file.endswith(('.txt', '.csv', '.json', '.log', '.xml', '.sql', '.md', '.yml', '.yaml')):
-                        try:
-                            file_path = os.path.join(root, file)
-                            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                                for line in f:
-                                    if phone_clean in line or ('+' + phone_clean) in line:
-                                        hits.append(line.strip())
-                        except:
-                            continue
-            return hits
+        resp = requests.get(url, timeout=15)
+        resp.raise_for_status()
+        lines = resp.text.splitlines()
+        hits = []
+        for line in lines:
+            if phone_clean in line or ('+' + phone_clean) in line:
+                hits.append(line.strip())
+        return hits
     except:
         return []
 
@@ -114,8 +85,8 @@ def main():
     print_line("[1/4] Поиск во ВКонтакте...", Fore.CYAN)
     vk_profiles = search_vk(full_number)
 
-    print_line("[2/4] Поиск в приватном репозитории...", Fore.MAGENTA)
-    repo_hits = search_in_private_repo(TARGET_REPO, digits, GITHUB_TOKEN)
+    print_line("[2/4] Поиск по ссылке...", Fore.MAGENTA)
+    url_hits = search_in_url(TARGET_URL, digits)
 
     print_line("[3/4] Проверка спам-баз...", Fore.YELLOW)
     is_spam = check_spam(digits)
@@ -138,9 +109,9 @@ def main():
         print_line("   Не найдено", Fore.LIGHTBLACK_EX)
 
     print_line("-" * 50, Fore.LIGHTBLACK_EX)
-    print_line("Совпадения в приватном репозитории:", Fore.LIGHTMAGENTA_EX)
-    if repo_hits:
-        for line in repo_hits:
+    print_line("Совпадения по ссылке:", Fore.LIGHTMAGENTA_EX)
+    if url_hits:
+        for line in url_hits:
             print_line(f"   {line}", Fore.LIGHTYELLOW_EX)
     else:
         print_line("   Совпадений нет", Fore.LIGHTBLACK_EX)
